@@ -333,11 +333,6 @@
         }
 
         .info-text { font-size: 12px; color: var(--color-text-secondary); margin-top: 8px; }
-        
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed !important;
-        }
     </style>
 </head>
 <body>
@@ -361,7 +356,7 @@
             <button class="tab-btn" onclick="switchTab(event, 'ranking-skill')">⭐ BXH Trình</button>
             <button class="tab-btn" onclick="switchTab(event, 'ranking-score')">🏆 BXH Điểm</button>
             <button class="tab-btn" onclick="switchTab(event, 'backup')">💾 Backup</button>
-            <button class="tab-btn" onclick="switchTab(event, 'settings')">🔐 Cài Đặt</button>
+            <button class="tab-btn" onclick="switchTab(event, 'settings')">⚙️ Cài Đặt</button>
         </div>
 
         <!-- Tab VĐV -->
@@ -536,40 +531,11 @@
 
         <!-- Tab Cài Đặt -->
         <div id="settings" class="tab-content">
-            <h2>🔐 Cài Đặt Bảo Mật</h2>
-            <div class="form-group">
-                <label>
-                    <strong>⚠️ Chế Độ Xem (Chỉ Đọc) - Luôn Bật</strong>
-                </label>
-                <p class="info-text" style="margin-top: 8px;">Chế độ xem luôn được bật và đồng bộ với Cloud. Nhập mật khẩu để tắt chế độ xem.</p>
-                <button class="btn" id="toggleReadOnlyBtn" style="background: var(--color-warning); margin-top: 12px;" onclick="toggleReadOnlyWithPassword()">🔓 Tắt Chế Độ Xem</button>
-            </div>
-
-            <div class="form-group" style="margin-top: 20px;">
-                <label>Thay Đổi Mật Khẩu Admin</label>
-                <input type="password" id="adminPassword" placeholder="Nhập mật khẩu mới">
-            </div>
-
-            <button class="btn" onclick="setAdminPassword()">🔑 Thay Đổi Mật Khẩu</button>
-
-            <div class="info-text" style="margin-top: 20px; background: rgba(192, 21, 47, 0.1); padding: 12px; border-radius: 8px;">
-                ⚠️ <strong>Chế Độ Xem:</strong> Người khác chỉ có thể xem, không thể thêm/xóa/sửa<br>
-                ⚠️ <strong>Mật Khẩu:</strong> Bảo vệ khi tắt chế độ xem (nếu có)<br>
-                ⚠️ <strong>Lưu ý:</strong> Mật khẩu được lưu trên máy này, không phải cloud
-            </div>
-
-            <h3 style="margin-top: 30px;">Trạng Thái Hiện Tại</h3>
-            <div class="payment-item">
-                <div class="payment-name">Chế Độ</div>
-                <div><span id="modeStatus" class="money negative">🔒 Chỉ Xem (Bật)</span></div>
-            </div>
-            <div class="payment-item">
-                <div class="payment-name">Mật Khẩu</div>
-                <div><span id="pwdStatus" class="money positive">✓ Đã Đặt</span></div>
-            </div>
-            <div class="payment-item">
-                <div class="payment-name">Đồng Bộ Cloud</div>
-                <div><span id="syncStatus2" class="money positive">✓ Tự Động</span></div>
+            <h2>⚙️ Cài Đặt</h2>
+            <div class="info-text" style="margin-top: 20px; background: rgba(34, 199, 90, 0.1); padding: 12px; border-radius: 8px;">
+                ✅ Chế độ chỉnh sửa luôn bật.  
+                ✅ Ai vào trang cũng có thể thêm/sửa/xóa dữ liệu.  
+                ⚠️ Hãy sao lưu dữ liệu thường xuyên bằng tab Backup.
             </div>
         </div>
 
@@ -610,8 +576,6 @@
         let members = JSON.parse(localStorage.getItem('members')) || [];
         let schedules = JSON.parse(localStorage.getItem('schedules')) || [];
         let matches = JSON.parse(localStorage.getItem('matches')) || [];
-        let readOnlyMode = true;
-        let adminPassword = localStorage.getItem('adminPassword') || 'Ali34';
 
         function switchTab(event, tabName) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -622,102 +586,6 @@
             if (tabName === 'ranking-money') updateRankingMoney();
             else if (tabName === 'ranking-skill') updateRankingSkill();
             else if (tabName === 'ranking-score') updateRankingScore();
-            else if (tabName === 'settings') updateSettingsUI();
-        }
-
-        function updateSettingsUI() {
-            document.getElementById('modeStatus').textContent = readOnlyMode ? '🔒 Chỉ Xem (Bật)' : '✅ Chỉnh Sửa (Mở)';
-            document.getElementById('modeStatus').className = readOnlyMode ? 'money negative' : 'money positive';
-            document.getElementById('pwdStatus').textContent = '✓ Đã Đặt: ' + adminPassword;
-            document.getElementById('syncStatus2').textContent = '✓ Tự Động';
-        }
-
-        function toggleReadOnlyWithPassword() {
-            const pwd = prompt('Nhập mật khẩu admin để tắt chế độ xem:');
-            if (!pwd) return;
-            if (pwd !== adminPassword) {
-                showNotification('Mật khẩu sai! Chế độ xem vẫn bật.', 'error');
-                return;
-            }
-            readOnlyMode = false;
-            applyReadOnlyMode();
-            showNotification('✓ Chế độ chỉnh sửa đã bật - 5 phút', 'success');
-            updateSettingsUI();
-            setTimeout(() => {
-                readOnlyMode = true;
-                applyReadOnlyMode();
-                showNotification('⏱️ Quay lại chế độ xem', 'info');
-                updateSettingsUI();
-            }, 300000);
-        }
-
-        function setAdminPassword() {
-            const newPwd = document.getElementById('adminPassword').value.trim();
-            if (!newPwd) {
-                showNotification('Mật khẩu không được để trống', 'error');
-                return;
-            }
-            const currentPwd = prompt('Nhập mật khẩu hiện tại để xác nhận:');
-            if (currentPwd !== adminPassword) {
-                showNotification('Mật khẩu hiện tại sai!', 'error');
-                return;
-            }
-            localStorage.setItem('adminPassword', newPwd);
-            adminPassword = newPwd;
-            showNotification('✓ Mật khẩu đã thay đổi', 'success');
-            document.getElementById('adminPassword').value = '';
-            updateSettingsUI();
-            autoSync();
-        }
-
-        function applyReadOnlyMode() {
-            const inputSelectors = ['#memberName', '#scheduleDate', '#scheduleNote', '#score1', '#score2', '#adminPassword', '#memberType', '#eventDate', '#pair1a', '#pair1b', '#pair2a', '#pair2b', '#paymentDate'];
-            
-            if (readOnlyMode) {
-                // Khóa inputs khi chế độ xem bật
-                inputSelectors.forEach(sel => {
-                    const elem = document.querySelector(sel);
-                    if (elem) elem.disabled = true;
-                });
-
-                // Khóa buttons (trừ backup, tải, toggle)
-                document.querySelectorAll('.btn').forEach(btn => {
-                    const text = btn.textContent;
-                    const isBackupBtn = text.includes('Firebase') || text.includes('Tải') || text.includes('Xóa Tất');
-                    const isToggleBtn = btn.id === 'toggleReadOnlyBtn';
-                    
-                    if (!isBackupBtn && !isToggleBtn) {
-                        btn.disabled = true;
-                        btn.style.opacity = '0.5';
-                        btn.style.cursor = 'not-allowed';
-                    }
-                });
-
-                // Khóa nút xóa
-                document.querySelectorAll('.delete-btn').forEach(btn => {
-                    btn.disabled = true;
-                    btn.style.opacity = '0.5';
-                    btn.style.cursor = 'not-allowed';
-                });
-            } else {
-                // Mở khi tắt chế độ xem
-                inputSelectors.forEach(sel => {
-                    const elem = document.querySelector(sel);
-                    if (elem) elem.disabled = false;
-                });
-
-                document.querySelectorAll('.btn').forEach(btn => {
-                    btn.disabled = false;
-                    btn.style.opacity = '1';
-                    btn.style.cursor = 'pointer';
-                });
-
-                document.querySelectorAll('.delete-btn').forEach(btn => {
-                    btn.disabled = false;
-                    btn.style.opacity = '1';
-                    btn.style.cursor = 'pointer';
-                });
-            }
         }
 
         function addMember() {
@@ -1242,8 +1110,5 @@
         updatePairSelects();
         updateScheduleSelects();
         updateMatchList();
-        // Không chạy applyReadOnlyMode ngay lập tức - chỉ chạy khi bấm toggle
         document.getElementById('autoSyncBtn').textContent = autoSyncEnabled ? '✓ Tự Động Đồng Bộ ON' : '○ Tự Động Đồng Bộ OFF';
-    </script>
-</body>
-</html>
+    </sc
