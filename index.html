@@ -671,23 +671,32 @@
         }
 
         function applyReadOnlyMode() {
-            const buttonSelectors = ['.btn:not(#autoSyncBtn):not(#toggleReadOnlyBtn)', '.delete-btn'];
-            const inputSelectors = ['#memberName', '#scheduleDate', '#scheduleNote', '#score1', '#score2', '#adminPassword'];
+            const inputSelectors = ['#memberName', '#scheduleDate', '#scheduleNote', '#score1', '#score2', '#adminPassword', '#memberType', '#eventDate', '#pair1a', '#pair1b', '#pair2a', '#pair2b', '#paymentDate'];
             
+            // Khóa inputs và selects
             inputSelectors.forEach(sel => {
                 const elem = document.querySelector(sel);
                 if (elem) elem.disabled = readOnlyMode;
             });
 
-            buttonSelectors.forEach(sel => {
-                document.querySelectorAll(sel).forEach(btn => {
-                    if (btn.textContent.includes('Firebase') || btn.textContent.includes('Tải') || btn.textContent.includes('Xóa Tất')) {
-                        return;
-                    }
+            // Khóa buttons thêm/sửa/xóa (trừ backup, tải, toggle)
+            document.querySelectorAll('.btn').forEach(btn => {
+                const text = btn.textContent;
+                const isBackupBtn = text.includes('Firebase') || text.includes('Tải') || text.includes('Xóa Tất');
+                const isToggleBtn = btn.id === 'toggleReadOnlyBtn';
+                
+                if (!isBackupBtn && !isToggleBtn) {
                     btn.disabled = readOnlyMode;
                     btn.style.opacity = readOnlyMode ? '0.5' : '1';
                     btn.style.cursor = readOnlyMode ? 'not-allowed' : 'pointer';
-                });
+                }
+            });
+
+            // Khóa nút xóa
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.disabled = readOnlyMode;
+                btn.style.opacity = readOnlyMode ? '0.5' : '1';
+                btn.style.cursor = readOnlyMode ? 'not-allowed' : 'pointer';
             });
         }
 
@@ -866,4 +875,355 @@
             const filtered = dateFilter ? matches.filter(m => m.date === dateFilter) : matches;
             const html = filtered.slice().reverse().map(m => `
                 <div class="match-item">
-                    <div class="m
+                    <div class="match-info">
+                        <div class="match-players">${m.pair1} <strong>${m.score1}</strong> - <strong>${m.score2}</strong> ${m.pair2}</div>
+                        <div class="match-score">${m.date}</div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteMatch(${m.id})">Xóa</button>
+                </div>
+            `).join('') || '<div class="empty-state"><p>Chưa có trận đấu</p></div>';
+            document.getElementById('matchList').innerHTML = html;
+        }
+
+        function deleteMatch(id) {
+            if (confirm('Xóa trận đấu này?')) {
+                matches = matches.filter(m => m.id !== id);
+                saveData();
+                updateMatchList();
+                updatePaymentList();
+                showNotification('Đã xóa trận đấu', 'success');
+                autoSync();
+            }
+        }
+
+        function updatePaymentList() {
+            const date = document.getElementById('paymentDate').value;
+            if (!date) {
+                document.getElementById('paymentList').innerHTML = '<div class="empty-state"><p>Vui lòng chọn ngày</p></div>';
+                return;
+            }
+
+            const dayMatches = matches.filter(m => m.date === date);
+            const playerMoney = {};
+
+            dayMatches.forEach(m => {
+                const [p1a, p1b] = m.pair1.split(' - ').map(x => x.trim());
+                const [p2a, p2b] = m.pair2.split(' - ').map(x => x.trim());
+
+                if (m.result1 === 'win') {
+                    playerMoney[p1a] = (playerMoney[p1a] || 0) + 50;
+                    playerMoney[p1b] = (playerMoney[p1b] || 0) + 50;
+                    playerMoney[p2a] = (playerMoney[p2a] || 0) - 50;
+                    playerMoney[p2b] = (playerMoney[p2b] || 0) - 50;
+                } else {
+                    playerMoney[p2a] = (playerMoney[p2a] || 0) + 50;
+                    playerMoney[p2b] = (playerMoney[p2b] || 0) + 50;
+                    playerMoney[p1a] = (playerMoney[p1a] || 0) - 50;
+                    playerMoney[p1b] = (playerMoney[p1b] || 0) - 50;
+                }
+            });
+
+            if (Object.keys(playerMoney).length === 0) {
+                document.getElementById('paymentList').innerHTML = '<div class="empty-state"><p>Chưa có trận đấu ngày này</p></div>';
+                return;
+            }
+
+            const sorted = Object.entries(playerMoney).sort((a, b) => a[1] - b[1]);
+            const total = Object.values(playerMoney).reduce((a, b) => a + b, 0);
+
+            let html = `<div class="payment-date-header">📅 ${new Date(date).toLocaleDateString('vi-VN')}</div>`;
+            html += sorted.map(([name, amount]) => `
+                <div class="payment-item">
+                    <div class="payment-name">${name}</div>
+                    <div><span class="money ${amount < 0 ? 'negative' : 'positive'}">${amount < 0 ? '-' : '+'}${Math.abs(amount)}k</span></div>
+                </div>
+            `).join('');
+            html += `<div class="total-payment"><div class="total-payment-label">Tổng Cộng</div><div class="total-payment-value">${total >= 0 ? '+' : ''}${total}k</div></div>`;
+
+            document.getElementById('paymentList').innerHTML = html;
+        }
+
+        function updateRankingMoney() {
+            const currentYear = new Date().getFullYear();
+            const playerMoney = {};
+
+            matches.forEach(m => {
+                if (new Date(m.date).getFullYear() !== currentYear) return;
+                const [p1a, p1b] = m.pair1.split(' - ').map(x => x.trim());
+                const [p2a, p2b] = m.pair2.split(' - ').map(x => x.trim());
+
+                if (m.result1 === 'win') {
+                    playerMoney[p1a] = (playerMoney[p1a] || { money: 0, matches: 0 });
+                    playerMoney[p1b] = (playerMoney[p1b] || { money: 0, matches: 0 });
+                    playerMoney[p1a].money += 50;
+                    playerMoney[p1b].money += 50;
+                    playerMoney[p1a].matches++;
+                    playerMoney[p1b].matches++;
+                    playerMoney[p2a] = (playerMoney[p2a] || { money: 0, matches: 0 });
+                    playerMoney[p2b] = (playerMoney[p2b] || { money: 0, matches: 0 });
+                    playerMoney[p2a].money -= 50;
+                    playerMoney[p2b].money -= 50;
+                    playerMoney[p2a].matches++;
+                    playerMoney[p2b].matches++;
+                } else {
+                    playerMoney[p2a] = (playerMoney[p2a] || { money: 0, matches: 0 });
+                    playerMoney[p2b] = (playerMoney[p2b] || { money: 0, matches: 0 });
+                    playerMoney[p2a].money += 50;
+                    playerMoney[p2b].money += 50;
+                    playerMoney[p2a].matches++;
+                    playerMoney[p2b].matches++;
+                    playerMoney[p1a] = (playerMoney[p1a] || { money: 0, matches: 0 });
+                    playerMoney[p1b] = (playerMoney[p1b] || { money: 0, matches: 0 });
+                    playerMoney[p1a].money -= 50;
+                    playerMoney[p1b].money -= 50;
+                    playerMoney[p1a].matches++;
+                    playerMoney[p1b].matches++;
+                }
+            });
+
+            const sorted = Object.entries(playerMoney).sort((a, b) => b[1].money - a[1].money);
+            const tbody = document.getElementById('rankingMoneyBody');
+
+            if (sorted.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Chưa có dữ liệu</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = sorted.map((item, idx) => `
+                <tr>
+                    <td><span class="rank-badge ${idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : ''}">${idx + 1}</span></td>
+                    <td>${item[0]}</td>
+                    <td>${item[1].matches}</td>
+                    <td><span class="money ${item[1].money >= 0 ? 'positive' : 'negative'}">${item[1].money >= 0 ? '+' : ''}${item[1].money}k</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function updateRankingSkill() {
+            const playerStats = {};
+
+            matches.forEach(m => {
+                const [p1a, p1b] = m.pair1.split(' - ').map(x => x.trim());
+                const [p2a, p2b] = m.pair2.split(' - ').map(x => x.trim());
+
+                [p1a, p1b, p2a, p2b].forEach(p => {
+                    if (!playerStats[p]) playerStats[p] = { wins: 0, total: 0 };
+                    playerStats[p].total++;
+                });
+
+                if (m.result1 === 'win') {
+                    playerStats[p1a].wins++;
+                    playerStats[p1b].wins++;
+                } else {
+                    playerStats[p2a].wins++;
+                    playerStats[p2b].wins++;
+                }
+            });
+
+            const filtered = Object.entries(playerStats).filter(([_, s]) => s.total >= 5);
+            const sorted = filtered.sort((a, b) => (b[1].wins / b[1].total) - (a[1].wins / a[1].total));
+            const tbody = document.getElementById('rankingSkillBody');
+
+            if (sorted.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Chưa có dữ liệu (cần ≥5 trận)</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = sorted.map((item, idx) => {
+                const percentage = Math.round((item[1].wins / item[1].total) * 100);
+                return `
+                    <tr>
+                        <td><span class="rank-badge ${idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : ''}">${idx + 1}</span></td>
+                        <td>${item[0]}</td>
+                        <td>${item[1].total}</td>
+                        <td>${percentage}%</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function updateRankingScore() {
+            const playerScore = {};
+
+            matches.forEach(m => {
+                const [p1a, p1b] = m.pair1.split(' - ').map(x => x.trim());
+                const [p2a, p2b] = m.pair2.split(' - ').map(x => x.trim());
+
+                [p1a, p1b].forEach(p => {
+                    if (!playerScore[p]) playerScore[p] = { win: 0, loss: 0, pointFor: 0, pointAgainst: 0 };
+                    if (m.result1 === 'win') {
+                        playerScore[p].win++;
+                        playerScore[p].pointFor += m.score1;
+                        playerScore[p].pointAgainst += m.score2;
+                    } else {
+                        playerScore[p].loss++;
+                        playerScore[p].pointFor += m.score1;
+                        playerScore[p].pointAgainst += m.score2;
+                    }
+                });
+
+                [p2a, p2b].forEach(p => {
+                    if (!playerScore[p]) playerScore[p] = { win: 0, loss: 0, pointFor: 0, pointAgainst: 0 };
+                    if (m.result2 === 'win') {
+                        playerScore[p].win++;
+                        playerScore[p].pointFor += m.score2;
+                        playerScore[p].pointAgainst += m.score1;
+                    } else {
+                        playerScore[p].loss++;
+                        playerScore[p].pointFor += m.score2;
+                        playerScore[p].pointAgainst += m.score1;
+                    }
+                });
+            });
+
+            const sorted = Object.entries(playerScore).sort((a, b) => (b[1].win - b[1].loss) - (a[1].win - a[1].loss));
+            const tbody = document.getElementById('rankingScoreBody');
+
+            if (sorted.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Chưa có dữ liệu</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = sorted.map((item, idx) => {
+                const diff = item[1].pointFor - item[1].pointAgainst;
+                return `
+                    <tr>
+                        <td><span class="rank-badge ${idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : ''}">${idx + 1}</span></td>
+                        <td>${item[0]}</td>
+                        <td>${item[1].win}W/${item[1].loss}L</td>
+                        <td>${item[1].pointFor + item[1].pointAgainst}</td>
+                        <td><span class="money ${diff >= 0 ? 'positive' : 'negative'}">${diff >= 0 ? '+' : ''}${diff}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function saveData() {
+            localStorage.setItem('members', JSON.stringify(members));
+            localStorage.setItem('schedules', JSON.stringify(schedules));
+            localStorage.setItem('matches', JSON.stringify(matches));
+        }
+
+        let autoSyncEnabled = localStorage.getItem('autoSyncEnabled') !== 'false';
+
+        function toggleAutoSync() {
+            autoSyncEnabled = !autoSyncEnabled;
+            localStorage.setItem('autoSyncEnabled', autoSyncEnabled);
+            document.getElementById('autoSyncBtn').textContent = autoSyncEnabled ? '✓ Tự Động Đồng Bộ ON' : '○ Tự Động Đồng Bộ OFF';
+            showNotification(autoSyncEnabled ? '✓ Tự động đồng bộ bật' : '○ Tự động đồng bộ tắt', 'info');
+        }
+
+        async function manualSaveFirebase() {
+            const data = { members, schedules, matches };
+            try {
+                updateSyncStatus('loading');
+                await set(ref(database, 'ali33club'), data);
+                showNotification('✓ Lưu lên Firebase thành công', 'success');
+                updateSyncStatus('success');
+            } catch (e) {
+                showNotification('❌ Lỗi: ' + e.message, 'error');
+                updateSyncStatus('error');
+            }
+        }
+
+        async function manualLoadFirebase() {
+            try {
+                updateSyncStatus('loading');
+                const snapshot = await get(ref(database, 'ali33club'));
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    members = data.members || [];
+                    schedules = data.schedules || [];
+                    matches = data.matches || [];
+                    saveData();
+                    updateMembersList();
+                    updateScheduleList();
+                    updatePairSelects();
+                    updateScheduleSelects();
+                    updateMatchList();
+                    updatePaymentList();
+                    showNotification('✓ Tải từ Firebase thành công', 'success');
+                    updateSyncStatus('success');
+                } else {
+                    showNotification('⚠️ Chưa có dữ liệu trên Firebase', 'info');
+                    updateSyncStatus('success');
+                }
+            } catch (e) {
+                showNotification('❌ Lỗi: ' + e.message, 'error');
+                updateSyncStatus('error');
+            }
+        }
+
+        async function autoSync() {
+            if (autoSyncEnabled) {
+                try {
+                    updateSyncStatus('loading');
+                    const data = { members, schedules, matches };
+                    await set(ref(database, 'ali33club'), data);
+                    updateSyncStatus('success');
+                } catch (e) {
+                    updateSyncStatus('error');
+                }
+            }
+        }
+
+        function updateSyncStatus(status) {
+            const syncEl = document.getElementById('syncStatus');
+            const syncText = document.getElementById('syncText');
+            syncEl.classList.remove('loading');
+            if (status === 'loading') {
+                syncEl.classList.add('loading');
+                syncText.textContent = 'Đang đồng bộ...';
+            } else if (status === 'success') {
+                syncText.textContent = '✓ Đã đồng bộ';
+                setTimeout(() => { syncText.textContent = 'Sẵn sàng đồng bộ'; }, 2000);
+            } else {
+                syncText.textContent = '❌ Lỗi đồng bộ';
+            }
+        }
+
+        function exportData() {
+            const data = { members, schedules, matches };
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ali33_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            showNotification('✓ Tải về thành công', 'success');
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ Xóa tất cả dữ liệu? Hành động này không thể hoàn tác!')) {
+                members = [];
+                schedules = [];
+                matches = [];
+                saveData();
+                updateMembersList();
+                updateScheduleList();
+                updateMatchList();
+                updatePaymentList();
+                showNotification('✓ Đã xóa tất cả dữ liệu', 'success');
+            }
+        }
+
+        function showNotification(message, type) {
+            const div = document.createElement('div');
+            div.className = `notification ${type}`;
+            div.textContent = message;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 3000);
+        }
+
+        // Initialize
+        updateMembersList();
+        updateScheduleList();
+        updatePairSelects();
+        updateScheduleSelects();
+        updateMatchList();
+        applyReadOnlyMode();
+        document.getElementById('autoSyncBtn').textContent = autoSyncEnabled ? '✓ Tự Động Đồng Bộ ON' : '○ Tự Động Đồng Bộ OFF';
+    </script>
+</body>
+</html>
