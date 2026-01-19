@@ -673,31 +673,51 @@
         function applyReadOnlyMode() {
             const inputSelectors = ['#memberName', '#scheduleDate', '#scheduleNote', '#score1', '#score2', '#adminPassword', '#memberType', '#eventDate', '#pair1a', '#pair1b', '#pair2a', '#pair2b', '#paymentDate'];
             
-            // Khóa inputs và selects
-            inputSelectors.forEach(sel => {
-                const elem = document.querySelector(sel);
-                if (elem) elem.disabled = readOnlyMode;
-            });
+            if (readOnlyMode) {
+                // Khóa inputs khi chế độ xem bật
+                inputSelectors.forEach(sel => {
+                    const elem = document.querySelector(sel);
+                    if (elem) elem.disabled = true;
+                });
 
-            // Khóa buttons thêm/sửa/xóa (trừ backup, tải, toggle)
-            document.querySelectorAll('.btn').forEach(btn => {
-                const text = btn.textContent;
-                const isBackupBtn = text.includes('Firebase') || text.includes('Tải') || text.includes('Xóa Tất');
-                const isToggleBtn = btn.id === 'toggleReadOnlyBtn';
-                
-                if (!isBackupBtn && !isToggleBtn) {
-                    btn.disabled = readOnlyMode;
-                    btn.style.opacity = readOnlyMode ? '0.5' : '1';
-                    btn.style.cursor = readOnlyMode ? 'not-allowed' : 'pointer';
-                }
-            });
+                // Khóa buttons (trừ backup, tải, toggle)
+                document.querySelectorAll('.btn').forEach(btn => {
+                    const text = btn.textContent;
+                    const isBackupBtn = text.includes('Firebase') || text.includes('Tải') || text.includes('Xóa Tất');
+                    const isToggleBtn = btn.id === 'toggleReadOnlyBtn';
+                    
+                    if (!isBackupBtn && !isToggleBtn) {
+                        btn.disabled = true;
+                        btn.style.opacity = '0.5';
+                        btn.style.cursor = 'not-allowed';
+                    }
+                });
 
-            // Khóa nút xóa
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.disabled = readOnlyMode;
-                btn.style.opacity = readOnlyMode ? '0.5' : '1';
-                btn.style.cursor = readOnlyMode ? 'not-allowed' : 'pointer';
-            });
+                // Khóa nút xóa
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                });
+            } else {
+                // Mở khi tắt chế độ xem
+                inputSelectors.forEach(sel => {
+                    const elem = document.querySelector(sel);
+                    if (elem) elem.disabled = false;
+                });
+
+                document.querySelectorAll('.btn').forEach(btn => {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                });
+
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                });
+            }
         }
 
         function addMember() {
@@ -1222,7 +1242,7 @@
         updatePairSelects();
         updateScheduleSelects();
         updateMatchList();
-        applyReadOnlyMode();
+        // Không chạy applyReadOnlyMode ngay lập tức - chỉ chạy khi bấm toggle
         document.getElementById('autoSyncBtn').textContent = autoSyncEnabled ? '✓ Tự Động Đồng Bộ ON' : '○ Tự Động Đồng Bộ OFF';
     </script>
 </body>
