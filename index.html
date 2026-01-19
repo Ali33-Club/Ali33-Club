@@ -152,6 +152,13 @@
             background: var(--color-primary-active);
         }
 
+        .btn-small {
+            width: auto;
+            padding: 6px 12px;
+            font-size: 12px;
+            margin: 0;
+        }
+
         .match-list {
             display: flex;
             flex-direction: column;
@@ -373,13 +380,99 @@
             color: var(--color-text);
         }
 
-        .badge-inactive {
-            background: #ccc;
-            color: #666;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            margin-left: 8px;
+        .payment-item {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .payment-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .payment-amount {
+            text-align: right;
+        }
+
+        .total-payment {
+            background: rgba(32, 135, 145, 0.1);
+            border: 2px solid var(--color-primary);
+            border-radius: var(--radius);
+            padding: 16px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .total-payment-label {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .total-payment-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--color-primary);
+            font-family: 'Courier New', monospace;
+        }
+
+        .member-list {
+            margin-top: 16px;
+        }
+
+        .member-item {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .member-name {
+            font-weight: 600;
+        }
+
+        .member-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(32, 135, 145, 0.1);
+            color: var(--color-primary);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .member-badge.guest {
+            background: rgba(165, 75, 47, 0.1);
+            color: #a84b2f;
+        }
+
+        .section-header {
+            margin-top: 24px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--color-primary);
+        }
+
+        .add-member-form {
+            background: rgba(32, 135, 145, 0.05);
+            border: 1px solid var(--color-primary);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .add-member-form h3 {
+            margin-top: 0;
         }
     </style>
 </head>
@@ -393,34 +486,41 @@
         <div class="message" id="message"></div>
 
         <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab(event, 'setup')">⚙️ Thiết Lập</button>
+            <button class="tab-btn active" onclick="switchTab(event, 'members')">👥 Danh Sách VĐV</button>
             <button class="tab-btn" onclick="switchTab(event, 'schedule')">📅 Lịch Sinh Hoạt</button>
             <button class="tab-btn" onclick="switchTab(event, 'matches')">🎾 Trận Đấu</button>
+            <button class="tab-btn" onclick="switchTab(event, 'payment')">💳 Nộp Tiền</button>
             <button class="tab-btn" onclick="switchTab(event, 'ranking-money')">💰 BXH Tiền</button>
             <button class="tab-btn" onclick="switchTab(event, 'ranking-skill')">⭐ BXH Trình Độ</button>
             <button class="tab-btn" onclick="switchTab(event, 'history')">📜 Lịch Sử</button>
             <button class="tab-btn" onclick="switchTab(event, 'backup')">💾 Backup</button>
         </div>
 
-        <!-- Tab Thiết Lập -->
-        <div id="setup" class="tab-content active">
-            <h2>Danh Sách CLB</h2>
-            <div class="form-group">
-                <label for="clubList">Danh Sách VĐV CLB (mỗi dòng một tên)</label>
-                <textarea id="clubList" placeholder="Sơn Tùng&#10;Quang Minh&#10;Tùng Pick&#10;Tùng Linh"></textarea>
+        <!-- Tab Danh Sách VĐV -->
+        <div id="members" class="tab-content active">
+            <div class="add-member-form">
+                <h3>➕ Thêm Thành Viên/Khách</h3>
+                <div class="row">
+                    <div class="form-group">
+                        <label for="memberName">Tên VĐV</label>
+                        <input type="text" id="memberName" placeholder="Nhập tên">
+                    </div>
+                    <div class="form-group">
+                        <label for="memberType">Loại</label>
+                        <select id="memberType">
+                            <option value="club">Thành Viên CLB</option>
+                            <option value="guest">Khách</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn" onclick="addMember()">➕ Thêm VĐV</button>
             </div>
-            <button class="btn" onclick="saveClubList()">💾 Lưu Danh Sách CLB</button>
 
-            <h2 style="margin-top: 24px;">Danh Sách Khách</h2>
-            <div class="form-group">
-                <label for="guestList">Danh Sách VĐV Khách (mỗi dòng một tên)</label>
-                <textarea id="guestList" placeholder="VĐV Khách 1&#10;VĐV Khách 2&#10;VĐV Khách 3"></textarea>
-            </div>
-            <button class="btn" onclick="saveGuestList()">💾 Lưu Danh Sách Khách</button>
+            <h2 class="section-header">👥 Danh Sách Thành Viên CLB</h2>
+            <div class="member-list" id="clubMembersList"></div>
 
-            <div class="info-text" style="margin-top: 20px;">
-                ✓ Lưu danh sách để sử dụng khi nhập kết quả trận đấu
-            </div>
+            <h2 class="section-header">🤝 Danh Sách Khách</h2>
+            <div class="member-list" id="guestMembersList"></div>
         </div>
 
         <!-- Tab Lịch Sinh Hoạt -->
@@ -505,6 +605,19 @@
             <div class="match-list" id="matchList"></div>
         </div>
 
+        <!-- Tab Nộp Tiền -->
+        <div id="payment" class="tab-content">
+            <div class="form-group">
+                <label for="paymentDate">Chọn Ngày Sinh Hoạt</label>
+                <select id="paymentDate" onchange="updatePaymentList()">
+                    <option value="">-- Chọn ngày --</option>
+                </select>
+            </div>
+
+            <h3 style="margin-top: 24px; margin-bottom: 12px;" id="paymentDateDisplay"></h3>
+            <div id="paymentList"></div>
+        </div>
+
         <!-- Tab BXH Tiền -->
         <div id="ranking-money" class="tab-content">
             <div class="summary" id="summary"></div>
@@ -583,13 +696,13 @@
     </div>
 
     <script>
-        let clubList = JSON.parse(localStorage.getItem('clubList')) || [];
-        let guestList = JSON.parse(localStorage.getItem('guestList')) || [];
+        let members = JSON.parse(localStorage.getItem('members')) || [];
         let allMatches = JSON.parse(localStorage.getItem('allMatches')) || [];
         let scheduleList = JSON.parse(localStorage.getItem('scheduleList')) || [];
 
         loadPlayerSelects();
         loadSchedules();
+        updateMembersList();
 
         function switchTab(event, tabName) {
             document.querySelectorAll('.tab-content').forEach(tab => {
@@ -610,45 +723,86 @@
                 updateHistory();
             } else if (tabName === 'matches') {
                 updateMatchList();
+            } else if (tabName === 'payment') {
+                updatePaymentList();
             }
         }
 
-        function saveClubList() {
-            const list = document.getElementById('clubList').value
-                .split('\n')
-                .map(name => name.trim())
-                .filter(name => name.length > 0);
+        function addMember() {
+            const name = document.getElementById('memberName').value.trim();
+            const type = document.getElementById('memberType').value;
 
-            if (list.length === 0) {
-                showMessage('Vui lòng nhập danh sách VĐV', 'error');
+            if (!name) {
+                showMessage('Vui lòng nhập tên VĐV', 'error');
                 return;
             }
 
-            clubList = list;
-            localStorage.setItem('clubList', JSON.stringify(clubList));
-            showMessage('✓ Đã lưu danh sách CLB', 'success');
+            // Kiểm tra trùng
+            if (members.some(m => m.name.toLowerCase() === name.toLowerCase())) {
+                showMessage('VĐV này đã có trong danh sách', 'error');
+                return;
+            }
+
+            members.push({
+                id: Date.now(),
+                name: name,
+                type: type
+            });
+
+            localStorage.setItem('members', JSON.stringify(members));
+            showMessage(`✓ Đã thêm VĐV: ${name}`, 'success');
+            
+            document.getElementById('memberName').value = '';
+            document.getElementById('memberType').value = 'club';
+            
             loadPlayerSelects();
+            updateMembersList();
         }
 
-        function saveGuestList() {
-            const list = document.getElementById('guestList').value
-                .split('\n')
-                .map(name => name.trim())
-                .filter(name => name.length > 0);
-
-            if (list.length === 0) {
-                showMessage('Vui lòng nhập danh sách khách', 'error');
-                return;
+        function deleteMember(id) {
+            if (confirm('Xóa VĐV này?')) {
+                members = members.filter(m => m.id !== id);
+                localStorage.setItem('members', JSON.stringify(members));
+                loadPlayerSelects();
+                updateMembersList();
+                showMessage('Đã xóa VĐV', 'success');
             }
+        }
 
-            guestList = list;
-            localStorage.setItem('guestList', JSON.stringify(guestList));
-            showMessage('✓ Đã lưu danh sách khách', 'success');
-            loadPlayerSelects();
+        function updateMembersList() {
+            const clubList = members.filter(m => m.type === 'club');
+            const guestList = members.filter(m => m.type === 'guest');
+
+            const clubHtml = clubList.length > 0
+                ? clubList.map(member => `
+                    <div class="member-item">
+                        <div>
+                            <div class="member-name">${member.name}</div>
+                            <span class="member-badge">Thành Viên CLB</span>
+                        </div>
+                        <button class="delete-btn btn-small" onclick="deleteMember(${member.id})">Xóa</button>
+                    </div>
+                `).join('')
+                : '<div class="empty-state"><p>Chưa có thành viên CLB</p></div>';
+
+            const guestHtml = guestList.length > 0
+                ? guestList.map(member => `
+                    <div class="member-item">
+                        <div>
+                            <div class="member-name">${member.name}</div>
+                            <span class="member-badge guest">Khách</span>
+                        </div>
+                        <button class="delete-btn btn-small" onclick="deleteMember(${member.id})">Xóa</button>
+                    </div>
+                `).join('')
+                : '<div class="empty-state"><p>Chưa có khách</p></div>';
+
+            document.getElementById('clubMembersList').innerHTML = clubHtml;
+            document.getElementById('guestMembersList').innerHTML = guestHtml;
         }
 
         function loadPlayerSelects() {
-            const allPlayers = [...clubList, ...guestList];
+            const allPlayers = members.map(m => m.name);
             const selects = ['pair1vdv1', 'pair1vdv2', 'pair2vdv1', 'pair2vdv2'];
             const selectedValues = {};
 
@@ -665,16 +819,22 @@
 
         function loadSchedules() {
             const eventDateSelect = document.getElementById('eventDate');
+            const paymentDateSelect = document.getElementById('paymentDate');
             const selectedDate = eventDateSelect.value;
+            const selectedPaymentDate = paymentDateSelect.value;
 
             eventDateSelect.innerHTML = '<option value="">-- Chọn ngày --</option>';
+            paymentDateSelect.innerHTML = '<option value="">-- Chọn ngày --</option>';
+            
             scheduleList.forEach(schedule => {
                 const dateStr = new Date(schedule.date).toLocaleDateString('vi-VN');
                 const note = schedule.note ? ` (${schedule.note})` : '';
                 eventDateSelect.innerHTML += `<option value="${schedule.date}">${dateStr}${note}</option>`;
+                paymentDateSelect.innerHTML += `<option value="${schedule.date}">${dateStr}${note}</option>`;
             });
 
             if (selectedDate) eventDateSelect.value = selectedDate;
+            if (selectedPaymentDate) paymentDateSelect.value = selectedPaymentDate;
             updateScheduleList();
         }
 
@@ -788,6 +948,7 @@
             document.getElementById('pair2vdv2').value = '';
 
             updateMatchList();
+            updatePaymentList();
             updateRankingMoney();
             updateRankingSkill();
         }
@@ -844,11 +1005,82 @@
             }).join('');
         }
 
+        function updatePaymentList() {
+            const paymentDate = document.getElementById('paymentDate').value;
+            const paymentDateDisplay = document.getElementById('paymentDateDisplay');
+            const paymentList = document.getElementById('paymentList');
+
+            if (!paymentDate) {
+                paymentDateDisplay.textContent = '';
+                paymentList.innerHTML = '<div class="empty-state"><p>Vui lòng chọn ngày sinh hoạt</p></div>';
+                return;
+            }
+
+            const dayMatches = allMatches.filter(m => m.date === paymentDate);
+
+            if (dayMatches.length === 0) {
+                const dateStr = new Date(paymentDate).toLocaleDateString('vi-VN');
+                paymentDateDisplay.textContent = `📅 ${dateStr} - Chưa có trận đấu`;
+                paymentList.innerHTML = '<div class="empty-state"><p>Không có dữ liệu trận đấu</p></div>';
+                return;
+            }
+
+            // Tính tiền từng VĐV
+            const playerMoney = {};
+            dayMatches.forEach(match => {
+                if (match.pair1) {
+                    const winners = match.result1 === 'win' ? match.pair1 : match.pair2;
+                    const losers = match.result1 === 'win' ? match.pair2 : match.pair1;
+                    winners.forEach(vdv => {
+                        playerMoney[vdv] = (playerMoney[vdv] || 0) + 50000;
+                    });
+                    losers.forEach(vdv => {
+                        playerMoney[vdv] = (playerMoney[vdv] || 0) - 50000;
+                    });
+                }
+            });
+
+            // Sắp xếp: những người nộp tiền trước (âm), rồi những người nhận tiền (dương)
+            const sortedPlayers = Object.entries(playerMoney)
+                .sort((a, b) => a[1] - b[1]);
+
+            const dateStr = new Date(paymentDate).toLocaleDateString('vi-VN');
+            paymentDateDisplay.textContent = `💳 Ngày ${dateStr}`;
+
+            const totalAmount = Object.values(playerMoney).reduce((a, b) => a + b, 0);
+
+            let html = '';
+            sortedPlayers.forEach(([player, amount]) => {
+                const isPayment = amount < 0;
+                const displayAmount = Math.abs(amount);
+                html += `
+                    <div class="payment-item">
+                        <div class="payment-name">${player}</div>
+                        <div class="payment-amount">
+                            <span class="money ${isPayment ? 'negative' : 'positive'}">
+                                ${isPayment ? '-' : '+'}${(displayAmount / 1000).toFixed(0)}k
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                <div class="total-payment">
+                    <div class="total-payment-label">Tổng Cộng Trong Ngày</div>
+                    <div class="total-payment-value">${totalAmount >= 0 ? '+' : ''}${(totalAmount / 1000).toFixed(0)}k</div>
+                </div>
+            `;
+
+            paymentList.innerHTML = html;
+        }
+
         function deleteMatch(id) {
             if (confirm('Xóa trận đấu này?')) {
                 allMatches = allMatches.filter(m => m.id !== id);
                 localStorage.setItem('allMatches', JSON.stringify(allMatches));
                 updateMatchList();
+                updatePaymentList();
                 updateRankingMoney();
                 updateRankingSkill();
                 updateHistory();
@@ -1055,8 +1287,7 @@
 
         function exportData() {
             const data = {
-                clubList,
-                guestList,
+                members,
                 allMatches,
                 scheduleList,
                 exportDate: new Date().toLocaleString('vi-VN')
@@ -1089,21 +1320,21 @@
             reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    clubList = data.clubList || [];
-                    guestList = data.guestList || [];
+                    members = data.members || [];
                     allMatches = data.allMatches || [];
                     scheduleList = data.scheduleList || [];
 
-                    localStorage.setItem('clubList', JSON.stringify(clubList));
-                    localStorage.setItem('guestList', JSON.stringify(guestList));
+                    localStorage.setItem('members', JSON.stringify(members));
                     localStorage.setItem('allMatches', JSON.stringify(allMatches));
                     localStorage.setItem('scheduleList', JSON.stringify(scheduleList));
 
                     fileInput.value = '';
                     loadPlayerSelects();
                     loadSchedules();
+                    updateMembersList();
                     updateRankingMoney();
                     updateRankingSkill();
+                    updatePaymentList();
 
                     showMessage('✓ Đã khôi phục dữ liệu thành công', 'success');
                 } catch (error) {
@@ -1117,19 +1348,20 @@
             if (confirm('⚠️ Bạn chắc chắn muốn xóa TẤT CẢ dữ liệu? Hành động này không thể hoàn tác!')) {
                 if (confirm('Xác nhận xóa lần cuối?')) {
                     localStorage.clear();
-                    clubList = [];
-                    guestList = [];
+                    members = [];
                     allMatches = [];
                     scheduleList = [];
                     
-                    document.getElementById('clubList').value = '';
-                    document.getElementById('guestList').value = '';
+                    document.getElementById('memberName').value = '';
+                    document.getElementById('memberType').value = 'club';
                     document.getElementById('importFile').value = '';
                     
                     loadPlayerSelects();
                     loadSchedules();
+                    updateMembersList();
                     updateRankingMoney();
                     updateRankingSkill();
+                    updatePaymentList();
                     
                     showMessage('✓ Đã xóa tất cả dữ liệu', 'success');
                 }
